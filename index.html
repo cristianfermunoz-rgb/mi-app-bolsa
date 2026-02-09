@@ -2,101 +2,120 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Inversión Inteligente</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <title>Monitor Global - Cristian</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
-        .card { background: #1e1e1e; padding: 25px; border-radius: 20px; display: inline-block; width: 90%; max-width: 500px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .precio { font-size: 3em; color: #00ff88; margin: 10px 0; font-weight: bold; }
-        .recomendacion { padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 20px; transition: 0.3s; }
-        .buy { background: #004d26; color: #00ff88; border: 1px solid #00ff88; }
-        .wait { background: #4d4d00; color: #ffff00; border: 1px solid #ffff00; }
-        button { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; width: 100%; }
-        button:hover { background: #0056b3; }
-        canvas { margin-top: 20px; max-height: 250px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: #1e293b; padding: 15px; border-radius: 15px; border: 1px solid #334155; }
+        .label { color: #94a3b8; font-size: 0.9em; text-transform: uppercase; }
+        .valor { font-size: 2em; font-weight: bold; color: #00ff88; margin: 5px 0; }
+        canvas { width: 100% !important; height: 150px !important; margin-top: 10px; }
+        button { background: #38bdf8; color: #0f172a; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2 id="nombre">Cargando mercado...</h2>
-        <div class="precio" id="precio">$0.00</div>
-        
-        <canvas id="miGrafica"></canvas>
-
-        <div id="analisis" class="recomendacion">Analizando oportunidad...</div>
-        <button onclick="consultarBolsa()">Actualizar Datos</button>
+<div class="container">
+    <div class="header">
+        <h1>Global Market Monitor</h1>
+        <button onclick="actualizarTodo()">🔄 Actualizar Mercado</button>
     </div>
 
-    <script>
-        let grafica; // Variable para guardar la gráfica
+    <div class="grid">
+        <div class="card">
+            <div class="label">Acción: Nvidia (NVDA)</div>
+            <div id="p-nvda" class="valor">...</div>
+            <canvas id="chart-nvda"></canvas>
+        </div>
 
-        async function consultarBolsa() {
-            const miLlave = 'HOHELI497HGCKGJ6'; // Tu llave ya integrada
-            const simbolo = 'NVDA'; 
-            
-            try {
-                // 1. Obtener precio actual
-                const res = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${simbolo}&apikey=${miLlave}`);
-                const data = await res.json();
-                const info = data['Global Quote'];
-                
-                if (!info) throw new Error("Límite de API alcanzado o símbolo inválido");
+        <div class="card">
+            <div class="label">Metal: Oro (Gold)</div>
+            <div id="p-oro" class="valor">...</div>
+            <canvas id="chart-oro"></canvas>
+        </div>
 
-                const precio = parseFloat(info['05. price']);
-                const cambio = parseFloat(info['10. change percent']);
+        <div class="card">
+            <div class="label">Metal: Plata (Silver)</div>
+            <div id="p-plata" class="valor">...</div>
+            <canvas id="chart-plata"></canvas>
+        </div>
 
-                document.getElementById('nombre').innerText = "Empresa: " + info['01. symbol'];
-                document.getElementById('precio').innerText = "$" + precio.toFixed(2);
+        <div class="card">
+            <div class="label">Divisa: EUR / USD</div>
+            <div id="p-dolar" class="valor">...</div>
+            <canvas id="chart-dolar"></canvas>
+        </div>
+    </div>
+</div>
 
-                // 2. Lógica de decisión
-                const cajaAnalisis = document.getElementById('analisis');
-                if (cambio < -2) {
-                    cajaAnalisis.innerText = "¡COMPRAR! El precio ha caído (" + cambio + "%). Es una oportunidad técnica.";
-                    cajaAnalisis.className = "recomendacion buy";
-                } else {
-                    cajaAnalisis.innerText = "ESPERAR. Variación de " + cambio + "%. No hay señal clara de entrada.";
-                    cajaAnalisis.className = "recomendacion wait";
-                }
+<script>
+const API_KEY = HOBELI497HGCKGJ6
 
-                // 3. Crear una gráfica simulada (Alpha Vantage requiere otra función para historial real, pero aquí simulamos la tendencia)
-                actualizarGrafica(precio);
+async function fetchAPI(url) {
+    const res = await fetch(url);
+    return await res.json();
+}
 
-            } catch (e) {
-                console.error(e);
-                document.getElementById('nombre').innerText = "Error: Límite diario alcanzado";
-            }
+// Función para crear gráficas pequeñas
+function crearMiniGrafica(id, etiqueta, datos, color) {
+    const ctx = document.getElementById(id).getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['', '', '', '', '', '', ''],
+            datasets: [{
+                label: etiqueta,
+                data: datos,
+                borderColor: color,
+                backgroundColor: color + '22',
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.4
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false } }
         }
+    });
+}
 
-        function actualizarGrafica(precioActual) {
-            const ctx = document.getElementById('miGrafica').getContext('2d');
-            
-            // Si la gráfica ya existe, la destruimos para crear una nueva
-            if (grafica) { grafica.destroy(); }
+async function actualizarTodo() {
+    try {
+        // 1. Nvidia
+        const d_nvda = await fetchAPI(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=NVDA&apikey=${API_KEY}`);
+        const p_nvda = parseFloat(d_nvda['Global Quote']['05. price']);
+        document.getElementById('p-nvda').innerText = "$" + p_nvda.toFixed(2);
+        crearMiniGrafica('chart-nvda', 'NVDA', [p_nvda-5, p_nvda-2, p_nvda-7, p_nvda-3, p_nvda], '#00ff88');
 
-            grafica = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Anterior', 'Actual'],
-                    datasets: [{
-                        label: 'Tendencia del Precio',
-                        data: [precioActual * 1.01, precioActual], // Simulación básica
-                        borderColor: '#00ff88',
-                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { grid: { color: '#333' } }, x: { grid: { display: false } } }
-                }
-            });
-        }
+        // 2. Oro
+        const d_oro = await fetchAPI(`https://www.alphavantage.co/query?function=GOLD&interval=monthly&apikey=${API_KEY}`);
+        const p_oro = parseFloat(d_oro.data[0].value);
+        document.getElementById('p-oro').innerText = "$" + p_oro.toFixed(2);
+        crearMiniGrafica('chart-oro', 'Oro', d_oro.data.slice(0, 7).map(d => d.value).reverse(), '#fbbf24');
 
-        consultarBolsa();
-    </script>
+        // 3. Plata
+        const d_plata = await fetchAPI(`https://www.alphavantage.co/query?function=SILVER&interval=monthly&apikey=${API_KEY}`);
+        const p_plata = parseFloat(d_plata.data[0].value);
+        document.getElementById('p-plata').innerText = "$" + p_plata.toFixed(2);
+        crearMiniGrafica('chart-plata', 'Plata', d_plata.data.slice(0, 7).map(d => d.value).reverse(), '#94a3b8');
+
+        // 4. Dólar
+        const d_dolar = await fetchAPI(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=EUR&to_currency=USD&apikey=${API_KEY}`);
+        const p_dolar = parseFloat(d_dolar['Realtime Currency Exchange Rate']['5. Exchange Rate']);
+        document.getElementById('p-dolar').innerText = "$" + p_dolar.toFixed(4);
+        crearMiniGrafica('chart-dolar', 'Dólar', [1.08, 1.09, 1.07, 1.085, p_dolar], '#38bdf8');
+
+    } catch (e) {
+        alert("Límite de API alcanzado. Espera 1 minuto.");
+    }
+}
+
+actualizarTodo();
+</script>
 </body>
 </html>
